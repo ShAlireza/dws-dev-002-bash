@@ -1,0 +1,60 @@
+#! /bin/bash
+
+#
+# Copyright 2021 Alireza Shateri
+#
+# try
+# Try a command multiple times until it finishes
+# successfully or fail all times.
+#
+
+set -o pipefail
+set -o nounset
+
+INTERVAL=5
+NUMBER=12
+COMMAND=
+
+usage() {
+  cat <<EOF
+  Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-i INTERVAL] [-n NUMBER] COMMAND
+  
+  with try, you can execute a command COMMAND, NUMBER times
+  with delay INTERVAL between each execution until
+  given command executes successfully or fail NUMBER times.
+EOF
+}
+
+while getopts hi:n: opt
+do
+  case $opt in
+    i) INTERVAL=$OPTARG;;
+    n) NUMBER=$OPTARG;;
+    h) usage
+       exit 0;;
+  esac
+done
+
+shift $[$OPTIND - 1]
+
+COMMAND=${*}
+
+INTERVAL=${INTERVAL:-${TRY_INTERVAL:-5}}
+NUMBER=${NUMBER:-${TRY_NUMBER:-12}}
+COMMAND=${COMMAND:-${TRY_COMMAND:?}}
+
+for (( i = 1 ; i <= $NUMBER; i++))
+do
+  echo "Try number $i"
+  eval "$COMMAND" 2> try.err
+  if [ $? -eq 0 ]
+  then
+    exit 0
+  fi
+  sleep $INTERVAL
+done
+
+echo "Command failed in $NUMBER retries" 1>&2
+
+exit 1
+
